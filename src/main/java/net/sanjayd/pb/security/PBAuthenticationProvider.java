@@ -28,6 +28,9 @@ public class PBAuthenticationProvider implements AuthenticationProvider {
             throws AuthenticationException {
         String username = ((String)authentication.getPrincipal()).toLowerCase();
         String password = (String) authentication.getCredentials();
+        
+        /* This SQL injection vulnerability is intentional. The point of the demo
+         * is to teach students why it is dangerous. */
         String query = "select count(*) from users where username = '" + username
                 + "' and password = '" + password + "'";
         logger.info(query);
