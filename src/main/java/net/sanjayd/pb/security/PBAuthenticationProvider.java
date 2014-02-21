@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.log4j.Logger;
+import org.springframework.jdbc.BadSqlGrammarException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -28,21 +29,23 @@ public class PBAuthenticationProvider implements AuthenticationProvider {
             throws AuthenticationException {
         String username = ((String)authentication.getPrincipal()).toLowerCase();
         String password = (String) authentication.getCredentials();
-        
+
         /* This SQL injection vulnerability is intentional. The point of the demo
          * is to teach students why it is dangerous. */
         String query = "select count(*) from users where username = '" + username
                 + "' and password = '" + password + "'";
         logger.info(query);
         // String query = "select count(*) from users where username = ? and password = ?";
-        if (jdbcTemplate.queryForObject(query, Integer.class) > 0) {
-            List<GrantedAuthority> authorities = new ArrayList<GrantedAuthority>();
-            authorities.add(new SimpleGrantedAuthority("ROLE_USER"));
-            return new UsernamePasswordAuthenticationToken(username,
-                    password, authorities);
-        } else {
-            throw new BadCredentialsException("Login failed for user " + username);
-        }
+        try {
+            if (jdbcTemplate.queryForObject(query, Integer.class) > 0) {
+                List<GrantedAuthority> authorities = new ArrayList<GrantedAuthority>();
+                authorities.add(new SimpleGrantedAuthority("ROLE_USER"));
+                return new UsernamePasswordAuthenticationToken(username,
+                        password, authorities);
+            }
+        } catch (BadSqlGrammarException e) { }
+
+        throw new BadCredentialsException("Login failed for user " + username);
     }
 
     @Override
